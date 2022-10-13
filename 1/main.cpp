@@ -1,9 +1,6 @@
 #include <iostream>
-#include <bitset>
 
 #pragma GCC diagnostic ignored "-Wshift-overflow"
-
-/* 2. Братушка — Вариант (2 % 19) + 1 = 3 */
 
 namespace assignment1
 {
@@ -50,6 +47,7 @@ namespace assignment1
     }
 
     void task1() {
+        std::cout << "\n=== Упражнение 1\n\n";
         int num = 0xa6;
         std::cout << std::bitset<32>(num) << " - число 0xa6 в двоичном представлении" << "\n";
         for (int i = 0; i < 16; i++)
@@ -61,6 +59,7 @@ namespace assignment1
         std::cout << std::bitset<32>(num) << " - результат применения оператора\n";
     }
     void task2() {
+        std::cout << "\n=== Упражнение 2\n\n";
         int num;
         std::cout << "Введите число: ";
         std::cin >> num;
@@ -78,6 +77,7 @@ namespace assignment1
         std::cout << std::bitset<32>(num) << " - результат применения оператора\n";
     }
     void task3() {
+        std::cout << "\n=== Упражнение 3\n\n";
         int num;
         std::cout << "Введите число: ";
         std::cin >> num;
@@ -86,6 +86,7 @@ namespace assignment1
         std::cout << std::bitset<32>(num) << " (" << num << ")"  << " - результат применения оператора\n";
     }
     void task4() {
+        std::cout << "\n=== Упражнение 4\n\n";
         int num;
         std::cout << "Введите число: ";
         std::cin >> num;
@@ -94,39 +95,29 @@ namespace assignment1
         std::cout << std::bitset<32>(num) << " (" << num << ")"  << " - результат применения оператора\n";
     }
     void task5() {
+        std::cout << "\n=== Упражнение 5\n\n";
         int num;
         short n;
         std::cout << "Введите число: ";
         std::cin >> num;
         std::cout << "Введите позицию n обнуляемого бита (0-31): ";
         std::cin >> n;
-        std::cout << std::bitset<32>(num) << " - введённое число\n";
-        std::cout << std::string(31 - n, ' ') << "^ — " << n << "-ый бит будет выставлен в 0\n";
+        std::cout << std::bitset<32>(num) << "(" << num << ")" << " - введённое число\n";
+        std::cout << std::string(31 - n, ' ') << "^" << std::string(n, ' ') << " — " << n << "-й бит будет выставлен в 0\n";
         assignment1::operator5(num, n);
-        std::cout << std::bitset<32>(num) << " - результат применения оператора\n";
-    }
-
-    void run()
-    {
-//        assignment1::task1();
-//        assignment1::task2();
-//        assignment1::task3();
-//        assignment1::task4();
-        assignment1::task5();
-    }
-
-    void tests() {
-
-        // 2.
-            // 12
-            // 134515123
-            // 14145123
+        std::cout << std::bitset<32>(num) << "(" << num << ")" << " - результат применения оператора\n";
     }
 }
 
 int main()
 {
-    assignment1::run();
+    assignment1::task1();
+    assignment1::task2();
+    assignment1::task3();
+    assignment1::task4();
+    assignment1::task5();
+    assignment1::task5();
+    assignment1::task5();
 
     return 0;
 }
