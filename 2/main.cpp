@@ -1,7 +1,6 @@
 #include <iostream>
-#include <string>
 #include <fstream>
-#include <vector>
+#include <chrono>
 
 struct Entry
 {
@@ -30,7 +29,30 @@ struct TItem
         key = data->phone;
         this->data = data;
     }
+
+    std::string to_string()
+    {
+        std::string address = data->address;
+        address.insert(address.size(), 50 - address.size(), ' ');
+        return std::to_string(data->phone) + " " + address + " " + std::to_string(was_deleted);
+    }
 };
+
+TItem *item_from_string(std::string str)
+{
+    long phone = std::atoll(str.substr(0, 11).c_str());
+    std::string address = str.substr(12, 50);
+    bool deleted = (bool) (std::atoi(str.substr(63, 1).c_str()));
+
+    TItem *item = new TItem(new Entry({
+                                              .phone = phone,
+                                              .address = address
+                                      })
+    );
+    item->was_deleted = deleted;
+
+    return item;
+}
 
 class HashTable
 {
@@ -38,7 +60,7 @@ private:
     constexpr static float load_factor = 0.75; // коэффициент загрузки таблицы
 
     // размер таблицы
-    int capacity = 3;
+    int capacity = 5;
     // количество элементов в таблице
     int size = 0;
     // количество удаленных элементов в таблице
@@ -67,8 +89,12 @@ private:
             return 1;
         }
 
+
         int hash = capacity % n;
-        hash = hash != 0 ? hash : 1;
+        if (capacity % hash == 0 || hash == 0)
+        {
+            hash = 1;
+        }
 
         return hash;
     }
@@ -100,31 +126,36 @@ private:
 public:
     HashTable()
     {
-        this->table = new TItem *[this->capacity];
+        this->table = new TItem *[capacity];
+        for (int i = 0; i < capacity; i++)
+            this->table[i] = nullptr;
+    }
+
+    int get_capacity()
+    {
+        return capacity;
     }
 
     /* метод, определяющий, необходимо ли рехеширование */
     bool rehashing_required()
     {
-        return size + deleted > capacity * load_factor;
+        return size + deleted > float(capacity) * load_factor;
     }
 
     // метод, производящий рехеширование
     void rehash()
     {
-        this->print();
-        capacity *= 2;
+        capacity = capacity * 2 + 1;
         deleted = 0;
 
         TItem **buf = new TItem *[capacity];
-
+        for (int i = 0; i < capacity; i++)
+            buf[i] = nullptr;
 
         for (int i = 0; i < capacity / 2; i++)
         {
             if (table[i] == nullptr || table[i]->was_deleted)
-            {
                 continue;
-            }
 
             int idx = this->hash(table[i]->key);
             // смещение
@@ -133,18 +164,14 @@ public:
             // если элемент таблицы не nullptr И
             // если элемент таблицы не был удален (в этой ячейке он есть)
             // ТО увеличиваем индекс на смещение
-//            printf("rehash %lu: idx = %d to idx = %d with disp %d\n", table[i]->key, i, idx, disp);
-            while (buf[idx] != nullptr)
-            {
+            while (buf[idx])
                 idx = (idx + disp) % capacity;
-            }
-//            printf("rehashed %lu: from idx = %d, to idx = %d\n", table[i]->key, i,  idx);
 
             buf[idx] = table[i];
         }
 
-        delete table;
-        table = buf;
+        delete this->table;
+        this->table = buf;
     }
 
     // добавление элемента
@@ -154,30 +181,32 @@ public:
         // смещение
         int disp = this->disp_hash(idx);
 
-        // если элемент таблицы не nullptr И
-        // если элемент таблицы не был удален - то есть удаленный элемент (пустышка)
-        // может быть заменен новым
-        // ТО увеличиваем индекс на смещение
-        while (table[idx] != nullptr && !table[idx]->was_deleted)
+//        printf("добавляем %lu: i = %d, d = %d\n", item->key, idx, disp);
+        while (table[idx] && !table[idx]->was_deleted)
         {
             // обновляем элемент (удаляем старый, добавляем новый)
             if (table[idx]->key == item->key)
                 break;
 
             idx = (idx + disp) % capacity;
-        }
 
-        if (table[idx])
-            delete table[idx];
+        }
+//        printf("добавили  %lu: i = %d\n", item->key, idx);
+
         if (table[idx] && table[idx]->was_deleted)
             this->deleted--;
+        if (!table[idx] || table[idx]->key != item->key)
+            this->size++;
+        if (table[idx])
+            delete table[idx];
         item->open_address = false;
         table[idx] = item;
-        this->size++;
 
         // рехешируем, если таблица соответствующе загружена
         if (this->rehashing_required())
+        {
             this->rehash();
+        }
     }
 
     // удаление элемента таблицы по ключу
@@ -188,7 +217,6 @@ public:
         if (itemIdx == -1)
             return false;
 
-        delete table[itemIdx]->data;
         table[itemIdx]->was_deleted = true;
 
         return true;
@@ -197,28 +225,29 @@ public:
     // поиск элемента таблицы по ключу
     TItem *find(Key key)
     {
-       int itemIdx = this->find_index(key);
+        int itemIdx = this->find_index(key);
 
-       if (itemIdx == -1)
-           return nullptr;
-       return table[itemIdx];
+        if (itemIdx == -1)
+            return nullptr;
+        return table[itemIdx];
     }
 
     // вывод содержимого таблицы в консоль
     void print()
     {
-        printf("[");
+        printf("[\n");
+
+
         for (int i = 0; i < capacity; i++)
         {
+            std::string vi = std::to_string(i + 1);
+            vi.insert(vi.begin(), (std::to_string(capacity).size() - vi.size()), '0');
             if (!table[i] || table[i]->was_deleted)
-            {
-                printf(" x");
-            } else
-            {
-                printf(" %s", table[i]->data->address.c_str());
-            }
+                printf("%s. x\n", vi.c_str());
+            else
+                printf("%s. %s\n", vi.c_str(), table[i]->to_string().c_str());
         }
-        printf(" ] \n");
+        printf("] \n");
     }
 
     ~HashTable()
@@ -233,77 +262,103 @@ public:
 
 class File
 {
-    std::ifstream IF; // поток чтения файла
-    std::ofstream OF; // поток записи файла
-    HashTable* t; // хеш-таблица
+    // размер строки в байтах
+    int row_size;
+
+    std::fstream f; // поток чтения/записи файла
+    HashTable *t; // хеш-таблица
     int pos = 0; // позиция (строка) в файле
 private:
     void fill_hash_table()
     {
-        std::cout << "fill hash table\n";
-
-        std::string foo;
-
-        std::getline(this->IF, foo);
-
-        std::cout << foo;
-
-
-        for (std::string line; std::getline(IF, line);)
+        int line_number = 0;
+        for (std::string line; std::getline(f, line); line_number++)
         {
-            std::cout << line;
+            // обработка последней строки в файле
+            if (line.size() == 0)
+                continue;
+
+            TItem *item = item_from_string(line);
+            // не добавляем в таблицу удаленную запись
+            if (item->was_deleted)
+                continue;
+            item->pos = line_number;
+            t->add(item);
         }
+        this->pos = line_number;
     }
+
 public:
     File(std::string path)
     {
-        IF.open(path, std::ios::in | std::ios::binary);
-        OF.open(path, std::ios::out | std::ios::binary);
+        // размер строки в байтах (+1 - символ переноса строки)
+        row_size = 8 * sizeof(std::string::size_type) + 1;
+
+        f.open(path, std::ios::in | std::ios::out | std::ios::binary);
 
         t = new HashTable();
         this->fill_hash_table();
     }
 
-    void add(TItem* item)
+    int get_capacity()
+    {
+        return t->get_capacity();
+    }
+
+    void add(TItem *item)
     {
         // если находим старое значение, то нужно заменить его новым,
-        // иначе добавляем новое значение в конец файла
-        TItem* old_item = t->find(item->key);
-        if (old_item) {
-            std::cout << sizeof *(item->data) << " " "old item!\n";
-            std::cout << item->data->address << " " "old item!\n";
-        }
-        if (old_item) {
+        TItem *old_item = t->find(item->key);
+        f.clear();
+        if (old_item)
+        {
+            f.seekp(old_item->pos * row_size, std::ios::beg);
+            f.write(item->to_string().c_str(), row_size - 1);
             item->pos = old_item->pos;
-//            t->add(item);
-
-        } else {
-            item->pos = pos;
-            pos++;
-            t->add(item);
-            OF << item->data->phone << " " << item->data->address << "\n";
+            // иначе добавляем новое значение в конец файла
+        } else
+        {
+            item->pos = this->pos++;
+            f.seekg(0, std::ios::end);
+            f << item->to_string() << "\n";
         }
+        t->add(item);
     }
 
     bool remove(Key key)
     {
-        TItem* item = this->t->find(key);
+        TItem *item = this->t->find(key);
         if (!item)
             return false;
 
-        int pos = item->pos;
-        this->t->remove(key);
+        f.clear();
 
-        return false;
+        // записываем "1" в столбец "удалено"
+        f.seekp(item->pos * this->row_size + 63);
+        f.write("1", 1);
+        return this->t->remove(key);
     }
 
-    // прочитать запись из указанной позиции (номеру/смещению)
-    std::string read_pos(int pos)
+    // прочитать запись из указанной позиции (номеру/смещению - начиная с 1)
+    std::string read_pos(long pos)
     {
+        // индексация с 0, строки в файле нумеруются с 1
+        pos -= 1;
         if (pos >= this->pos)
             return "";
 
-        return "";
+        char result[row_size];
+
+        f.clear();
+        f.seekg(pos * row_size, std::ios::beg);
+        f.read(result, row_size - 1);
+
+        return std::string(result);
+    }
+
+    TItem *find(Key key)
+    {
+        return t->find(key);
     }
 
     void print()
@@ -314,23 +369,123 @@ public:
     ~File()
     {
         delete t;
-        IF.close();
-        OF.close();
+        f.close();
         pos = 0;
     }
+
 };
+
+void test1()
+{
+    HashTable *t1 = new HashTable();
+
+    printf("Тест #1\n-----\n");
+
+    t1->add(item_from_string("89727455953 QVCplNGvmvhlQGPDbXQbnT1k29f1VwFic-_aDR-A1bsB89456W 0"));
+    printf("Хеш-таблица #1\n");
+    t1->print();
+
+    HashTable t2;
+
+    t2.add(item_from_string("89195255283 P7suQjMvk4DhoXiEaacO9mcsgeExboAYC8Yg6hEqgemHRBwpxy 0"));
+    printf("Хеш-таблица #2\n");
+    t2.print();
+
+    t1->add(item_from_string("89195255283 P7suQjMvk4DhoXiEaacO9mcsgeExboAYC8Yg6hEqgemHRBwpxy 0"));
+    printf("Хеш-таблица #1\n");
+    t1->print();
+}
+
+void test2()
+{
+    HashTable t;
+
+    printf("Тест #2\n-----\n");
+
+    t.add(item_from_string("89727455953 QVCplNGvmvhlQGPDbXQbnT1k29f1VwFic-_aDR-A1bsB89456W 0"));
+    t.add(item_from_string("89195255283 P7suQjMvk4DhoXiEaacO9mcsgeExboAYC8Yg6hEqgemHRBwpxy 0"));
+
+    t.add(item_from_string("89195255267 P7suQjMvk4DhoXiEaacO9mcsgeExboAYC8Yg6hEqgemHRBwpxy 0"));
+    t.print();
+    t.add(item_from_string("89195255298 P7suQjMvk4DhoXiEaacO9mcsgeExboAYC8Yg6hEqgemHRBwpxy 0"));
+    t.print();
+}
+
+void test2_2()
+{
+    HashTable *t = new HashTable();
+
+    printf("Тест #2.2\n-----\n");
+
+    t->add(item_from_string("89727455953 QVCplNGvmvhlQGPDbXQbnT1k29f1VwFic-_aDR-A1bsB89456W 0"));
+    t->add(item_from_string("89195255280 P7suQjMvk4DhoXiEaacO9mcsgeExboAYC8Yg6hEqgemHRBwpxy 0"));
+
+    t->add(item_from_string("89195255267 P7suQjMvk4DhoXiEaacO9mcsgeExboAYC8Yg6hEqgemHRBwpxy 0"));
+    t->remove(89195255267);
+    t->print();
+    t->add(item_from_string("89195285296 P7suQjMvk4DhoXiEaacO9mcsgeExboAYC8Yg6hEqgemHRBwpxy 0"));
+    t->print();
+}
+
+void test3()
+{
+    printf("Тест #3\n-----\n");
+
+    std::chrono::steady_clock::time_point begin, end;
+
+    begin = std::chrono::steady_clock::now();
+    File f("records1.5m.txt");
+    end = std::chrono::steady_clock::now();
+    printf("Хеш-таблица на 1.5м записей заполнилась за                       %lums\n", (unsigned long)(std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count()));
+    printf("Вместимость хеш-таблицы: %d\n", f.get_capacity());
+
+    begin = std::chrono::steady_clock::now();
+    assert(f.read_pos(1) == "89048208674 ts_SWD0uxYZg0ySYi_jkFn9wxAFBa4mH5SFG9C3PJZjHpzOuh7 0");
+    end = std::chrono::steady_clock::now();
+    printf("Поиск по позиции (первое вхождение) выполнен за                  %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
+    begin = std::chrono::steady_clock::now();
+    assert(f.read_pos(750000) == "89336370753 YKHPXfT0p0OOW6pgZXUbCUG_Hr3eStJucaI51SOVkGaXDTfpJk 0");
+    end = std::chrono::steady_clock::now();
+    printf("Поиск по позиции (750000-е вхождение) выполнен за                %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
+    begin = std::chrono::steady_clock::now();
+//    std::cout << f.read_pos(1500000) << std::endl;
+    assert(f.read_pos(1500000) == "89722336033 gydpHZ66pMqn5Q2zz-IvEFm19iQgdu1l8AvJkijSQJwD3mCfwI 0");
+    end = std::chrono::steady_clock::now();
+    printf("Поиск по позиции (1500000-е вхождение) выполнен за               %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
+    begin = std::chrono::steady_clock::now();
+    TItem *item = f.find(89048208674);
+    end = std::chrono::steady_clock::now();
+    assert(item != nullptr);
+    assert(item->data->address == "ts_SWD0uxYZg0ySYi_jkFn9wxAFBa4mH5SFG9C3PJZjHpzOuh7");
+    printf("Поиск по ключу 89048208674 (первое вхождение) выполнен за        %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
+    begin = std::chrono::steady_clock::now();
+    TItem *item2 = f.find(89336370753);
+    end = std::chrono::steady_clock::now();
+    assert(item2 != nullptr);
+    assert(item2->data->address == "YKHPXfT0p0OOW6pgZXUbCUG_Hr3eStJucaI51SOVkGaXDTfpJk");
+    printf("Поиск по ключу 89336370753 (750000-е вхождение) выполнен за      %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
+    begin = std::chrono::steady_clock::now();
+    TItem *item3 = f.find(89722336033);
+    end = std::chrono::steady_clock::now();
+    assert(item3 != nullptr);
+    assert(item3->data->address == "gydpHZ66pMqn5Q2zz-IvEFm19iQgdu1l8AvJkijSQJwD3mCfwI");
+    printf("Поиск по ключу 89722336033 (1500000-е вхождение) выполнен за     %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
+    f.print();
+}
 
 
 int main()
 {
-    HashTable t;
-
-    File f("foobar.txt");
-
-    f.add(new TItem(new Entry({.phone = 89160723483, .address = "struve"})));
-    f.add(new TItem(new Entry({.phone = 89160723484, .address = "btruve"})));
-    f.add(new TItem(new Entry({.phone = 89160723485, .address = "ptruve"})));
-    f.add(new TItem(new Entry({.phone = 89160723483, .address = "mruve"})));
+    test1();
+    test2();
+    test2_2();
+    test3();
 
     return 0;
 }

@@ -4,18 +4,22 @@
 
 namespace assignment1
 {
-    void operator1(int &num)
+    int operator1(int &num)
     {
         /* только с четными номерами */
         constexpr int mask = 0x55555555;
         num |= mask;
+
+        return mask;
     }
 
-    void operator2(int &num)
+    int operator2(int &num)
     {
         /* 7-й, 9-й, 11-й */
         constexpr int mask = 0xfffff57f;
         num &= mask;
+
+        return mask;
     }
 
     void operator3(int &num)
@@ -30,7 +34,7 @@ namespace assignment1
         num >>= 4;
     }
 
-    void operator5(int &num, short n)
+    int operator5(int &num, short n)
     {
         /* обнулить n-ый бит, используя маску пункта 1 */
 
@@ -44,6 +48,8 @@ namespace assignment1
         one_bit_mask = ~one_bit_mask;
 
         num &= one_bit_mask;
+
+        return one_bit_mask;
     }
 
     void task1() {
@@ -55,7 +61,8 @@ namespace assignment1
             std::cout << " ^";
         }
         std::cout << " - биты только с чётными номерами будут выставлены в 1\n";
-        assignment1::operator1(num);
+        int mask = assignment1::operator1(num);
+        std::cout << std::bitset<32>(mask) << " - двоичная маска оператора\n";
         std::cout << std::bitset<32>(num) << " - результат применения оператора\n";
     }
     void task2() {
@@ -73,7 +80,8 @@ namespace assignment1
             }
         }
         std::cout << " - биты на позициях 7, 9 и 11 будут выставлены в 0\n";
-        assignment1::operator2(num);
+        int mask = assignment1::operator2(num);
+        std::cout << std::bitset<32>(mask) << " - двоичная маска оператора\n";
         std::cout << std::bitset<32>(num) << " - результат применения оператора\n";
     }
     void task3() {
@@ -104,7 +112,8 @@ namespace assignment1
         std::cin >> n;
         std::cout << std::bitset<32>(num) << "(" << num << ")" << " - введённое число\n";
         std::cout << std::string(31 - n, ' ') << "^" << std::string(n, ' ') << " — " << n << "-й бит будет выставлен в 0\n";
-        assignment1::operator5(num, n);
+        int mask = assignment1::operator5(num, n);
+        std::cout << std::bitset<32>(mask) << " - двоичная маска оператора\n";
         std::cout << std::bitset<32>(num) << "(" << num << ")" << " - результат применения оператора\n";
     }
 }
