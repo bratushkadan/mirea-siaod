@@ -70,13 +70,13 @@ public:
     }
 
     /* Отобразить дерево на экране, повернув его справа налево. */
-    void print_rotated_right()
+    void print_rotated_left()
     {
-        this->rotate_right();
+        this->rotate_left();
         this->print();
     }
 
-    void rotate_right()
+    void rotate_left()
     {
         if (root == nullptr || root->right == nullptr)
             return;
@@ -89,9 +89,9 @@ public:
     }
 
     /* Определить количество листьев с положительными значениями */
-    int count_positive()
+    int count_positive_leaves()
     {
-        return count_positive_recursive(root);
+        return count_positive_leaves_recursive(root);
     }
 
     /* Определить, сколько узлов дерева содержат заданное число. */
@@ -142,12 +142,12 @@ private:
         }
     }
 
-    int count_positive_recursive(Node *root)
+    int count_positive_leaves_recursive(Node *tree)
     {
-        if (root == nullptr)
+        if (tree == nullptr)
             return 0;
 
-        return (root->val > 0 ? 1 : 0) + count_positive_recursive(root->left) + count_positive_recursive(root->right);
+        return (tree->left == nullptr && tree->right == nullptr && tree->val > 0 ? 1 : 0) + count_positive_leaves_recursive(tree->left) + count_positive_leaves_recursive(tree->right);
     }
 
     int count_vals_recursive(Node *root, int val)
@@ -224,10 +224,10 @@ public:
                 tree->print();
                 return;
             case 2:
-                tree->print_rotated_right();
+                tree->print_rotated_left();
                 return;
             case 3:
-                printf("В дереве %d узлов с положительным значением.\n\n", tree->count_positive());
+                printf("В дереве %d листьев с положительным значением.\n\n", tree->count_positive_leaves());
                 return;
             case 4:
                 int d;
@@ -248,22 +248,7 @@ public:
 
 int main()
 {
-    int arr[]{-1, 2, 4, 4, 4, 8, 8, 32, 128};
-
-//    PerfectlyBalancedBinaryTree tree(arr, 9);
-//    tree.print();
-//    std::cout << "\n";
-//
-//    tree.double_tree();
-//    tree.print();
-//    std::cout << "\n";
-//
-//    tree.rotate_right();
-//    tree.print();
-//    std::cout << "\n";
-
     Test t;
-
     t.run();
 
     return 0;
