@@ -103,36 +103,45 @@ public:
             return;
         }
 
-        std::queue < Node * > *q = new std::queue<Node *>({root});
-        std::queue < Node * > *lq = new std::queue<Node *>;
+        Node *parent;
+
+        std::queue < Node * > *q = new std::queue<Node *>({root->left, root->right});
+        std::queue <std::string> *lq = new std::queue<std::string>({"(L)", "(R)"});
+        std::queue<long> *pq = new std::queue<long>({root->key, root->key});
+
+        std::cout << root->key << "\n";
 
         while (q->size() || lq->size())
         {
-            if (q->size() == 0)
-            {
-                delete q;
-                q = lq;
-                lq = new std::queue<Node *>;
-                std::cout << "\n";
-            }
-
             Node *p = q->front();
+            std::string label = lq->front();
+            long parent_key = pq->front();
             q->pop();
+            lq->pop();
+            pq->pop();
 
             if (p == nullptr)
             {
-                std::cout << "x ";
                 continue;
             }
+            if (p->left == nullptr)
+            {
+                q->push(p->right);
+                lq->push("(R)");
+                pq->push(p->key);
+            }
+            if (p->right == nullptr)
+            {
+                q->push(p->left);
+                lq->push("(L)");
+                pq->push(p->key);
+            }
 
-            lq->push(p->left);
-            lq->push(p->right);
 
-            std::cout << p->key << " ";
+            std::cout << parent_key << " > " << label << " " << p->key << "\n";
         }
 
         delete q;
-        delete lq;
 
         std::cout << "\n\n";
     }
@@ -266,7 +275,7 @@ public:
 };
 
 // в варианте #3 - splay tree (самоперестраивающееся/косое дерево)
-class SplayTree : public Tree
+class SplayTree : public BST
 {
 private:
     int rotations = 0;
@@ -677,38 +686,38 @@ int main()
     /* 1.2 -- end */
 
     /* 2.1 -- start */
-//    SplayTree st;
-//
-//    st.insert(new Node(1));
-//    st.insert(new Node(2));
-//    st.print();
-//    st.insert(new Node(-5));
-//    st.print();
-//    st.insert(new Node(3));
-//    st.print();
-//    st.insert(new Node(4));
-//    st.print();
-//    st.insert(new Node(-3));
-//    st.print();
+    SplayTree st;
+
+    st.insert(new Node(1));
+    st.insert(new Node(2));
+    st.print();
+    st.insert(new Node(-5));
+    st.print();
+    st.insert(new Node(3));
+    st.print();
+    st.insert(new Node(4));
+    st.print();
+    st.insert(new Node(-3));
+    st.print();
     /*  2.1 -- end */
 
     /*  2.2 -- start */
-    double c = 10;
-    File f("records10.txt", new SplayTree());
-
-    SplayTree *st = dynamic_cast<SplayTree *>(f.get_tree());
-
-    if (st)
-    {
-        printf("Всего поворотов: r = %d\n", st->get_rotations());
-        printf("Среднее число поворотов (число поворотов / число вставленных ключей): %.3f\n", (double)(st->get_rotations()) / c);
-//        st->print();
-    }
-    else
-    {
-        std::cerr << "Невозможно привести класс файла к SplayTree\n";
-        exit(1);
-    }
+//    double c = 10;
+//    File f("records10.txt", new SplayTree());
+//
+//    SplayTree *st = dynamic_cast<SplayTree *>(f.get_tree());
+//
+//    if (st)
+//    {
+//        printf("Всего поворотов: r = %d\n", st->get_rotations());
+//        printf("Среднее число поворотов (число поворотов / число вставленных ключей): %.3f\n", (double)(st->get_rotations()) / c);
+////        st->print();
+//    }
+//    else
+//    {
+//        std::cerr << "Невозможно привести класс файла к SplayTree\n";
+//        exit(1);
+//    }
 //
 //    printf("searching entry with key = %lu\n", 89784365876);
 //    printf("found position = %lu\n", f.find(89784365876));
