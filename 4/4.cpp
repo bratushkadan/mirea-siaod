@@ -2,8 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <queue>
-
-#define COUNT 13
+#include <chrono>
 
 struct Entry
 {
@@ -60,7 +59,6 @@ struct Node
         this->key = key;
         this->pos = pos;
 
-        this->parent = nullptr;
         this->left = nullptr;
         this->right = nullptr;
     }
@@ -71,7 +69,6 @@ struct Node
     int pos;
     Node *left;
     Node *right;
-    Node *parent;
 };
 
 class Tree
@@ -103,15 +100,13 @@ public:
             return;
         }
 
-        Node *parent;
-
         std::queue < Node * > *q = new std::queue<Node *>({root->left, root->right});
         std::queue <std::string> *lq = new std::queue<std::string>({"(L)", "(R)"});
         std::queue<long> *pq = new std::queue<long>({root->key, root->key});
 
         std::cout << root->key << "\n";
 
-        while (q->size() || lq->size())
+        while (q->size())
         {
             Node *p = q->front();
             std::string label = lq->front();
@@ -124,19 +119,18 @@ public:
             {
                 continue;
             }
-            if (p->left == nullptr)
-            {
-                q->push(p->right);
-                lq->push("(R)");
-                pq->push(p->key);
-            }
-            if (p->right == nullptr)
+            if (p->left != nullptr)
             {
                 q->push(p->left);
                 lq->push("(L)");
                 pq->push(p->key);
             }
-
+            if (p->right != nullptr)
+            {
+                q->push(p->right);
+                lq->push("(R)");
+                pq->push(p->key);
+            }
 
             std::cout << parent_key << " > " << label << " " << p->key << "\n";
         }
@@ -167,7 +161,6 @@ public:
     // добавление узла
     void insert(Node *node)
     {
-        Node **parent = nullptr;
         Node **current = &root;
 
         while (*current)
@@ -176,16 +169,14 @@ public:
 
             if (comparison > 0)
             {
-                parent = current;
                 current = &((*current)->right);
             } else if (comparison < 0)
             {
-                parent = current;
                 current = &((*current)->left);
-            }
+            } else
+                break;
         }
 
-        node->parent = parent ? *parent : nullptr;
         *current = node;
     }
 
@@ -253,6 +244,7 @@ public:
     // поиск узла с заданным ключом
     Node *find(Key key)
     {
+        int comparisons = 0;
         std::queue < Node * > q({root});
 
         while (q.size())
@@ -261,15 +253,23 @@ public:
             q.pop();
 
             if (node == nullptr)
+            {
                 continue;
+            }
 
+
+            comparisons++;
             if (node->key == key)
+            {
+                std::cout << "Сравнений: " << comparisons << std::endl;
                 return node;
+            }
 
             q.push(node->left);
             q.push(node->right);
         }
 
+        std::cout << "Сравнений: " << comparisons << std::endl;
         return nullptr;
     }
 };
@@ -309,14 +309,19 @@ private:
         Node *LeftTreeMax = &header;
         Node *RightTreeMin = &header;
 
+        int comp = 0;
         while (true)
         {
             if (key < root->key)
             {
+                comp += 1;
+                comp += 1;
                 if (!root->left)
                     break;
+                comp += 1;
                 if (key < root->left->key)
                 {
+                    comp += 1;
                     root = rr_rotate(root);
                     if (!root->left)
                         break;
@@ -329,13 +334,17 @@ private:
                 RightTreeMin->left = nullptr;
             } else if (key > root->key)
             {
+                comp += 1;
+                comp += 1;
                 if (!root->right)
                     break;
 
+                comp += 1;
                 if (key > root->right->key)
                 {
                     root = ll_rotate(root);
 
+                    comp += 1;
                     if (!root->right)
                         break;
                 }
@@ -349,6 +358,8 @@ private:
             } else
                 break;
         }
+
+//        std::cout << "Сравнений: " << comp << std::endl;
 
         LeftTreeMax->right = root->left;
         RightTreeMin->left = root->right;
@@ -536,12 +547,12 @@ public:
     }
 };
 
-class TestSplayTree
+class TestTree
 {
 private:
     Tree *tree;
 public:
-    TestSplayTree()
+    TestTree()
     {
         std::cout << "Введите параметры косого дерева:\n\n";
         std::cout << "Введите размер массива: ";
@@ -564,6 +575,9 @@ public:
         {
             tree->insert(new Node(atoi(num.c_str())));
         }
+    }
+    TestTree(Tree *tree) {
+        this->tree = tree;
     }
 
     // запустить программу
@@ -673,37 +687,56 @@ int main()
     /* 1.1 -- end */
 
     /* 1.2 -- begin */
-//    File f("records10.txt", new BST());
+    File f("records10.txt", new BST());
 //    f.print();
-//
-//    printf("searching entry with key = %lu\n", 89784365876);
-//    printf("found position = %lu\n", f.find(89784365876));
-//    printf("read position %s\n", f.read_pos(f.find(89784365876)).c_str());
-//
-//    printf("searching entry with key = %lu\n", 89784365800);
-//    printf("found position = %lu\n", f.find(89784365800));
-//    printf("read position %s\n", f.read_pos(f.find(89784365800)).c_str());
+
+    TestTree *tt = new TestTree(f.get_tree());
+//    tt->run();
+
+    Tree* t = f.get_tree();
+    Node *node;
+    std::chrono::steady_clock::time_point begin, end;
+
+    begin = std::chrono::steady_clock::now();
+    node = t->find(89721596747);
+    end = std::chrono::steady_clock::now();
+    assert(node != nullptr);
+    printf("Поиск по ключу 89721596747 выполнен за     %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
+    begin = std::chrono::steady_clock::now();
+    node = t->find(89225361459);
+    end = std::chrono::steady_clock::now();
+    assert(node != nullptr);
+    printf("Поиск по ключу 89225361459 выполнен за     %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
+    begin = std::chrono::steady_clock::now();
+    node = t->find(89372040084);
+    end = std::chrono::steady_clock::now();
+    assert(node != nullptr);
+    printf("Поиск по ключу 89372040084 выполнен за     %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
     /* 1.2 -- end */
 
     /* 2.1 -- start */
-    SplayTree st;
-
-    st.insert(new Node(1));
-    st.insert(new Node(2));
-    st.print();
-    st.insert(new Node(-5));
-    st.print();
-    st.insert(new Node(3));
-    st.print();
-    st.insert(new Node(4));
-    st.print();
-    st.insert(new Node(-3));
-    st.print();
+//    SplayTree st;
+//
+//    st.insert(new Node(1));
+//    st.insert(new Node(2));
+//    st.print();
+//    st.insert(new Node(-5));
+//    st.print();
+//    st.insert(new Node(3));
+//    st.print();
+//    st.insert(new Node(4));
+//    st.print();
+//    st.insert(new Node(-3));
+//    st.print();
     /*  2.1 -- end */
 
     /*  2.2 -- start */
-//    double c = 10;
-//    File f("records10.txt", new SplayTree());
+//    std::cout << "Загрузка файла с 1.5m записями" << std::endl;
+//    double c = 1500000;
+//    File f("records1.5m.txt", new SplayTree());
 //
 //    SplayTree *st = dynamic_cast<SplayTree *>(f.get_tree());
 //
@@ -711,7 +744,6 @@ int main()
 //    {
 //        printf("Всего поворотов: r = %d\n", st->get_rotations());
 //        printf("Среднее число поворотов (число поворотов / число вставленных ключей): %.3f\n", (double)(st->get_rotations()) / c);
-////        st->print();
 //    }
 //    else
 //    {
@@ -719,14 +751,33 @@ int main()
 //        exit(1);
 //    }
 //
-//    printf("searching entry with key = %lu\n", 89784365876);
-//    printf("found position = %lu\n", f.find(89784365876));
-//    printf("read position %s\n", f.read_pos(f.find(89784365876)).c_str());
+////    f.print();
+//    Tree* t = f.get_tree();
+//    Node *node;
+//    std::chrono::steady_clock::time_point begin, end;
 //
-//    printf("searching entry with key = %lu\n", 89784365800);
-//    printf("found position = %lu\n", f.find(89784365800));
-//    printf("%d\n", (int)(f.find(89784365800) == -1));
-//    printf("read position %s\n", f.read_pos(f.find(89784365800)).c_str());
+//    begin = std::chrono::steady_clock::now();
+//    node = t->find(89551509033);
+//    end = std::chrono::steady_clock::now();
+//    assert(node != nullptr);
+//    printf("Поиск по ключу 89551509033 выполнен за     %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+//
+//    begin = std::chrono::steady_clock::now();
+//    node = t->find(89858041013);
+//    end = std::chrono::steady_clock::now();
+//    assert(node != nullptr);
+//    printf("Поиск по ключу 89858041013 выполнен за     %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+//
+//    begin = std::chrono::steady_clock::now();
+//    node = t->find(89211699396);
+//    end = std::chrono::steady_clock::now();
+//    assert(node != nullptr);
+//    printf("Поиск по ключу 89211699396 выполнен за     %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
+
+//    f.print();
+//    tt->run();
+
+
     /*  2.2 -- end */
 
     /* 2.3 -- start */
