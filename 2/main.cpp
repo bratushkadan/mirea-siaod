@@ -464,21 +464,21 @@ void test3()
 //    TItem *item = f.find(89048208674);
 //    end = std::chrono::steady_clock::now();
 //    assert(item != nullptr);
-//    assert(item->data->address == "ts_SWD0uxYZg0ySYi_jkFn9wxAFBa4mH5SFG9C3PJZjHpzOuh7");
+//    assert(item->prim-data-1->address == "ts_SWD0uxYZg0ySYi_jkFn9wxAFBa4mH5SFG9C3PJZjHpzOuh7");
 //    printf("Поиск по ключу 89048208674 (первое вхождение) выполнен за        %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
 //
 //    begin = std::chrono::steady_clock::now();
 //    TItem *item2 = f.find(89336370753);
 //    end = std::chrono::steady_clock::now();
 //    assert(item2 != nullptr);
-//    assert(item2->data->address == "YKHPXfT0p0OOW6pgZXUbCUG_Hr3eStJucaI51SOVkGaXDTfpJk");
+//    assert(item2->prim-data-1->address == "YKHPXfT0p0OOW6pgZXUbCUG_Hr3eStJucaI51SOVkGaXDTfpJk");
 //    printf("Поиск по ключу 89336370753 (750000-е вхождение) выполнен за      %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
 //
 //    begin = std::chrono::steady_clock::now();
 //    TItem *item3 = f.find(89722336033);
 //    end = std::chrono::steady_clock::now();
 //    assert(item3 != nullptr);
-//    assert(item3->data->address == "gydpHZ66pMqn5Q2zz-IvEFm19iQgdu1l8AvJkijSQJwD3mCfwI");
+//    assert(item3->prim-data-1->address == "gydpHZ66pMqn5Q2zz-IvEFm19iQgdu1l8AvJkijSQJwD3mCfwI");
 //    printf("Поиск по ключу 89722336033 (1500000-е вхождение) выполнен за     %luns\n", (unsigned long)(std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count()));
 
 //    f.print();
